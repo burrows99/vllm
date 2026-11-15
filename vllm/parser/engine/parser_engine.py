@@ -1162,7 +1162,7 @@ class ParserEngine(Parser):
             final_json = converter(slot.args, False)
         except (json.JSONDecodeError, ValueError, TypeError):
             logger.debug("arg converter failed (flush): %s", slot.args[:80])
-            return None
+            final_json = self._extract_args_json(slot.args, slot.name)
 
         if final_json:
             final_json = self._fix_arg_types(final_json, slot.name)

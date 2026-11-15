@@ -392,6 +392,25 @@ def test_streaming_parallel_calls_are_chunk_invariant(
     assert json.loads(args[1]) == {"items": [1, 2]}
 
 
+@pytest.mark.parametrize("chunk_size", [1, 5, 100])
+@pytest.mark.parametrize("key", ["arguments", "parameters"])
+def test_streaming_string_arguments_match_non_streaming(
+    parser,
+    mock_tokenizer,
+    mock_request,
+    chunk_size,
+    key,
+):
+    # Some models emit the arguments already serialized as a JSON string.
+    text = f'{{"name":"a","{key}":"{{\\"x\\": 1}}"}}'
+    _, _, tools = parser.parse(text, mock_request)
+    assert [tool.arguments for tool in tools] == ['{"x": 1}']
+
+    results = _stream(LlamaJsonParser(mock_tokenizer), mock_request, text, chunk_size)
+    assert _collect_names(results) == ["a"]
+    assert _collect_args(results) == {0: '{"x": 1}'}
+
+
 @pytest.mark.parametrize("name", ["llama3_json", "llama4_json"])
 def test_registered_tool_parser_aliases(name):
     parser_class = ToolParserManager.get_tool_parser(name)
